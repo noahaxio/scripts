@@ -240,6 +240,23 @@ git clone https://github.com/noahaxio/axiographs
 cp cp axiographs/* $REAL_HOME
 rm -r axiographs
 
+echo "Setting up Scripts directory for user: $REAL_USER..."
+
+# Create the Scripts directory
+mkdir -p "$REAL_HOME/Scripts"
+
+# Move into that directory
+cd "$REAL_HOME/Scripts" || exit
+
+# Clone the repository into the CURRENT directory (.)
+git clone https://github.com/noahaxio/scripts .
+
+# Make all files in the directory executable
+chmod +x *
+
+# Fix permissions so the user owns the folder and files
+chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/Scripts"
+
 echo "Adding chartRenderer to Node-RED settings.js..."
 
 if [ -f "$SETTINGS_FILE" ]; then
