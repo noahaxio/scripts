@@ -257,29 +257,55 @@ chmod +x *
 # Fix permissions so the user owns the folder and files
 chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/Scripts"
 
-echo "Adding chartRenderer to Node-RED settings.js..."
+echo "Setting up Renderers directory for user: $REAL_USER..."
 
-if [ -f "$SETTINGS_FILE" ]; then
-    # We escape the inner quotes (\") so the path is preserved correctly in the file
-    sudo sed -i "/functionGlobalContext: {/a\        chartRenderer: require(\"/home/debix/chart-renderer.js\")," "$SETTINGS_FILE"
-    echo "Inserted chartRenderer: require(\"/home/debix/chart-renderer.js\") into functionGlobalContext."
+# Create the Renderers directory
+mkdir -p "$REAL_HOME/Renderers"
+
+# Move into that directory
+cd "$REAL_HOME/Renderers" || exit
+
+# Clone the repository into the CURRENT directory (.)
+git clone https://github.com/noahaxio/renderers .
+
+# Fix permissions so the user owns the folder and files
+chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/Renderers"
+
+echo "Done. Renderers cloned successfully."
+
+echo "Dynamically adding all Renderers to Node-RED settings.js..."
+
+RENDERERS_DIR="/home/debix/Renderers"
+SETTINGS_FILE="/home/debix/.node-red/settings.js"
+
+if [ -f "$SETTINGS_FILE" ] && [ -d "$RENDERERS_DIR" ]; then
+    # Loop through every .js file in the Renderers directory
+    for filepath in "$RENDERERS_DIR"/*.js; do
+        # 1. Get the filename (e.g., "chart-renderer.js")
+        filename=$(basename "$filepath")
+        
+        # 2. Remove the extension to get the base name (e.g., "chart-renderer")
+        basename="${filename%.*}"
+        
+        # 3. Convert kebab-case to camelCase (e.g., "chart-renderer" -> "chartRenderer")
+        # This ensures your variable names match what you had manually before.
+        varName=$(echo "$basename" | sed -r 's/-([a-z])/\U\1/g')
+        
+        # 4. Construct the line to insert
+        # Result: chartRenderer: require("/home/debix/Renderers/chart-renderer.js"),
+        ENTRY="$varName: require(\"$filepath\"),"
+        
+        # 5. Insert the line into settings.js
+        # We search for "functionGlobalContext: {" and append the new line after it
+        sudo sed -i "/functionGlobalContext: {/a\        $ENTRY" "$SETTINGS_FILE"
+        
+        echo "  + Added $filename as global variable: $varName"
+    done
 else
-    echo "WARNING: Node-RED settings.js not found at $SETTINGS_FILE"
-    echo "Start Node-RED once manually so the file is created, then re-run this patch."
+    echo "WARNING: Could not find Settings file or Renderers directory. Skipping dynamic injection."
 fi
 
-echo "Adding pieChartRenderer to Node-RED settings.js..."
-
-if [ -f "$SETTINGS_FILE" ]; then
-    # We escape the inner quotes (\") so the path is preserved correctly in the file
-    sudo sed -i "/functionGlobalContext: {/a\        pieChartRenderer: require(\"/home/debix/pie-chart-renderer.js\")," "$SETTINGS_FILE"
-    echo "Inserted pieChartRenderer: require(\"/home/debix/pie-chart-renderer.js\") into functionGlobalContext."
-else
-    echo "WARNING: Node-RED settings.js not found at $SETTINGS_FILE"
-    echo "Start Node-RED once manually so the file is created, then re-run this patch."
-fi
-
-#ADD AUTO GIT / AUTO COMMIT USING .config.users.json and settings.js / AUTO PUSH TO GITHUBß
+#ADD AUTO GIT / AUTO COMMIT USING .config.users.json and settings.js / AUTO PUSH TO GITHUB
 
 
 
