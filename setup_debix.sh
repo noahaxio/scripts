@@ -29,6 +29,9 @@ sudo apt-get install -y git
 echo "Installing Cocopit..."
 sudo apt-get install -y cockpit
 
+echo "Installing mbpoll"
+sudo apt-get install -y mbpoll
+
 echo "Installing vnstat..."
 sudo apt-get install vnstat
 
@@ -139,14 +142,27 @@ echo "## 2. Installing main npm packages (latest versions)..."
 
 # List of the first set of packages - version numbers removed
 MAIN_PACKAGES=(
+    "@flowfuse/node-red-dashboard"
     "@napi-rs/canvas"
+    "@platmac/node-red-pdfbuilder"
     "canvas"
     "chart.js"
     "chartjs-adapter-date-fns"
     "chartjs-adapter-moment"
+    "chartjs-node-canvas"
     "chartjs-plugin-zoom"
     "date-fns"
     "moment"
+    "node-red-contrib-boolean-logic-ultimate"
+    "node-red-contrib-cpu"
+    "node-red-contrib-fs-ops"
+    "node-red-contrib-influxdb"
+    "node-red-contrib-modbus"
+    "node-red-contrib-os"
+    "node-red-contrib-pdfmake"
+    "node-red-contrib-unit-converter"
+    "node-red-node-email"
+    "node-red-node-openweathermap"
 )
 
 # Install packages
@@ -189,10 +205,12 @@ NODE_RED_PACKAGES=(
     "node-red-contrib-influxdb"
     "node-red-contrib-modbus"
     "node-red-contrib-os"
-	"node-red-contrib-socketcan"
     "node-red-contrib-pdfmake"
     "node-red-contrib-unit-converter"
+    "node-red-node-email"
+    "node-red-node-openweathermap"
     "nodemailer"
+    "node-red-contrib-socketcan"
 )
 
 # Install Node-RED packages
