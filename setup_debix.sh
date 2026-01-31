@@ -163,6 +163,7 @@ MAIN_PACKAGES=(
     "node-red-contrib-unit-converter"
     "node-red-node-email"
     "node-red-node-openweathermap"
+	"chartjs-node-canvas"
 )
 
 # Install packages
@@ -211,6 +212,7 @@ NODE_RED_PACKAGES=(
     "node-red-node-openweathermap"
     "nodemailer"
     "node-red-contrib-socketcan"
+	"chartjs-node-canvas"
 )
 
 # Install Node-RED packages
