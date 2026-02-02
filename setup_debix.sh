@@ -450,6 +450,7 @@ EOF"
 # Set proper permissions
 sudo chmod 644 "$DESKTOP_ENTRY"
 sudo chown root:root "$DESKTOP_ENTRY"
+sudo chown -R debix:debix /home/debix/.node-red
 
 echo "Autorun setup complete."
 
