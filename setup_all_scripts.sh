@@ -9,24 +9,38 @@ fi
 # 2. Define variables
 REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME=$(eval echo "~$REAL_USER")
+TARGET_DIR="$REAL_HOME/Scripts"
+REPO_URL="https://github.com/noahaxio/scripts"
 
 # --- Start of Block ---
 
 echo "Setting up Scripts directory for user: $REAL_USER..."
 
-# Create the Scripts directory
-mkdir -p "$REAL_HOME/Scripts"
+# Check if the directory exists AND is a git repository (contains .git)
+if [ -d "$TARGET_DIR/.git" ]; then
+    echo "Directory exists and is a git repository. Updating..."
+    cd "$TARGET_DIR" || exit
+    git pull
 
-# Move into that directory
-cd "$REAL_HOME/Scripts" || exit
+# Check if directory exists but is NOT a git repository (safety check)
+elif [ -d "$TARGET_DIR" ] && [ "$(ls -A "$TARGET_DIR")" ]; then
+    echo "Error: $TARGET_DIR exists but is not empty and not a git repository."
+    echo "Please back up or remove this folder manually."
+    exit 1
 
-# Clone the repository into the CURRENT directory (.)
-git clone https://github.com/noahaxio/scripts .
+# Otherwise, create and clone
+else
+    echo "Cloning repository..."
+    mkdir -p "$TARGET_DIR"
+    cd "$TARGET_DIR" || exit
+    git clone "$REPO_URL" .
+fi
 
 # Make all files in the directory executable
 chmod +x *
 
 # Fix permissions so the user owns the folder and files
-chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/Scripts"
+# (Necessary because git run via sudo creates root-owned files)
+chown -R "$REAL_USER":"$REAL_USER" "$TARGET_DIR"
 
-echo "Done. Repository cloned and scripts made executable."
+echo "Done. Scripts directory is up to date and executable."
