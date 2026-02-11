@@ -6,6 +6,24 @@ if (( EUID != 0 )); then
   exit 1
 fi
 
+# --- 5. Fix Permissions ---
+echo "## 5. Fixing ownership and permissions..."
+
+# Ensure the user owns their home directory node_modules
+# (Fixes issues where 'sudo npm install' or 'audit fix' creates root-owned files)
+if [ -d "$REAL_HOME/node_modules" ]; then
+    echo "Fixing permissions for $REAL_HOME/node_modules..."
+    chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/node_modules"
+    chown "$REAL_USER":"$REAL_USER" "$REAL_HOME/package-lock.json" 2>/dev/null
+    chown "$REAL_USER":"$REAL_USER" "$REAL_HOME/package.json" 2>/dev/null
+fi
+
+# Ensure the user owns the .node-red directory
+if [ -d "$NODE_RED_DIR" ]; then
+    echo "Fixing permissions for $NODE_RED_DIR..."
+    chown -R "$REAL_USER":"$REAL_USER" "$NODE_RED_DIR"
+fi
+
 echo "=== NPM Package & Dependency Installer ==="
 
 # Identify the real user (who called sudo) to install packages for them, not root
@@ -19,8 +37,8 @@ echo "User Home: $REAL_HOME"
 echo "## 1. Installing required system dependencies..."
 
 if command -v apt &> /dev/null; then
-    sudo apt-get update -y
-    sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+    apt-get update -y
+    apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
     echo "System dependencies installed successfully."
 else
     echo "Warning: 'apt' not found. Skipping system dependency installation."
@@ -56,12 +74,10 @@ MAIN_PACKAGES=(
     "node-red-contrib-unit-converter"
     "node-red-node-email"
     "node-red-node-openweathermap"
-	"chartjs-node-canvas"
+    "chartjs-node-canvas"
 )
 
-# Install packages as the user (avoiding root ownership initially if possible, but we fix permissions later anyway)
-# We use sudo -u to ensure npm doesn't default to root's cache/config too aggressively, 
-# though running as root then chowning is also valid. Sticking to root execution + chown as per original logic.
+# Install packages as root (permissions fixed later)
 npm install "${MAIN_PACKAGES[@]}"
 
 if [ $? -eq 0 ]; then
@@ -102,7 +118,7 @@ NODE_RED_PACKAGES=(
     "node-red-node-openweathermap"
     "nodemailer"
     "node-red-contrib-socketcan"
-	"chartjs-node-canvas"
+    "chartjs-node-canvas"
 )
 
 npm install "${NODE_RED_PACKAGES[@]}"
@@ -116,22 +132,20 @@ fi
 
 echo "---"
 
-# --- 4. Fix Permissions ---
-echo "## 4. Fixing ownership and permissions..."
+# --- 4. Run NPM Audit Fix ---
+echo "## 4. Running 'npm audit fix --force'..."
 
-# Ensure the user owns their home directory node_modules
-# (Fixes issues where 'sudo npm install' creates root-owned files)
-if [ -d "$REAL_HOME/node_modules" ]; then
-    echo "Fixing permissions for $REAL_HOME/node_modules..."
-    chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/node_modules"
-    chown "$REAL_USER":"$REAL_USER" "$REAL_HOME/package-lock.json" 2>/dev/null
-    chown "$REAL_USER":"$REAL_USER" "$REAL_HOME/package.json" 2>/dev/null
-fi
+# Fix in User Home
+echo "Running audit fix in $REAL_HOME..."
+cd "$REAL_HOME" || exit 1
+npm audit fix --force
 
-# Ensure the user owns the .node-red directory
-if [ -d "$NODE_RED_DIR" ]; then
-    echo "Fixing permissions for $NODE_RED_DIR..."
-    chown -R "$REAL_USER":"$REAL_USER" "$NODE_RED_DIR"
-fi
+# Fix in Node-RED Directory
+echo "Running audit fix in $NODE_RED_DIR..."
+cd "$NODE_RED_DIR" || exit 1
+npm audit fix --force
+
+echo "Audit fix complete."
+echo "---"
 
 echo "=== Installation Complete ==="
