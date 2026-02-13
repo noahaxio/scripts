@@ -236,5 +236,5 @@ fi
 
 echo "================================================="
 echo " Setup Complete!"
-echo " Authelia and Redis are spinning up."
+echo " Authelia and Redis are spinning up, remeber to add auth-${DEVICE_NAME}.axioenergy.co and ${DEVICE_NAME}.axioenergy.co to your Cloudflare"
 echo "================================================="

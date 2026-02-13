@@ -162,7 +162,6 @@ MAIN_PACKAGES=(
     "node-red-contrib-pdfmake"
     "node-red-contrib-unit-converter"
     "node-red-node-email"
-    "node-red-node-openweathermap"
 	"chartjs-node-canvas"
 )
 
@@ -209,7 +208,6 @@ NODE_RED_PACKAGES=(
     "node-red-contrib-pdfmake"
     "node-red-contrib-unit-converter"
     "node-red-node-email"
-    "node-red-node-openweathermap"
     "nodemailer"
     "node-red-contrib-socketcan"
 	"chartjs-node-canvas"
