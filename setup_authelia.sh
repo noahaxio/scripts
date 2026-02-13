@@ -68,9 +68,6 @@ echo "--> Setting up Authelia files in /opt/authelia..."
 mkdir -p /opt/authelia
 cd /opt/authelia
 
-# Make sure these exist so Authelia doesn't complain
-touch db.sqlite3 notification.txt
-
 # 4a. docker-compose.yml (Quoted 'EOF' means no variables are expanded here)
 cat << 'EOF' > docker-compose.yml
 version: '3.8'
