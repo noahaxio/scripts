@@ -5,8 +5,19 @@ git config --global user.email "noahg@axioenergy.co"
 git config --global user.name "noahg"
 
 INFLUX_ORG="Axio"
-INFLUX_TOKEN=""
 INFLUX_HOST="http://localhost:8086"
+
+# Define where the token lives
+TOKEN_FILE="/etc/axio-influx-token"
+
+# Check if the token file exists before proceeding
+if [ ! -f "$TOKEN_FILE" ]; then
+    echo "Error: Token file $TOKEN_FILE not found! Please create it and add your token."
+    exit 1
+fi
+
+# Read the token
+INFLUX_TOKEN=$(cat "$TOKEN_FILE")
 
 # GitHub Details
 REPO_URL="git@github.com:noahaxio/$(cat /etc/axio-device-name).git"
