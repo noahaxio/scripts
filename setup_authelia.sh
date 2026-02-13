@@ -35,6 +35,18 @@ else
   echo "--> Docker is already installed. Skipping."
 fi
 
+# --- FIX IPTABLES BACKEND FOR DOCKER ---
+echo "--> Ensuring iptables uses the nftables backend (required for Docker on this kernel)..."
+
+# Switch iptables and ip6tables to use the nftables wrapper
+update-alternatives --set iptables /usr/sbin/iptables-nft || true
+update-alternatives --set ip6tables /usr/sbin/ip6tables-nft || true
+
+# If Docker is already active, it needs a restart to pick up the new iptables configuration
+if systemctl is-active --quiet docker; then
+  echo "--> Restarting Docker to apply networking changes..."
+  systemctl restart docker
+fi
 
 # --- 3. GENERATE AUTHELIA PASSWORD HASH ---
 echo "-------------------------------------------------"
@@ -61,7 +73,6 @@ if [ -z "$ADMIN_HASH" ]; then
     exit 1
 fi
 echo "--> Hash generated successfully."
-
 
 # --- 4. CREATE AUTHELIA DIRECTORIES & FILES ---
 echo "--> Setting up Authelia files in /opt/authelia..."
