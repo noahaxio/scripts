@@ -462,6 +462,6 @@ echo "Performing Auto Cleanup"
 sudo apt autoremove
 
 echo "=== Setup complete! ==="
-echo "Reboot recomended with 'sudo reboot now'"
+echo "Reboot recomended with 'sudo reboot now, next steps would be to setup node red projects, then cloudflare, then run the influxdb backup setup and finally optionally athelia'"
 #sudo reboot now
 
