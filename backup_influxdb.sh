@@ -4,23 +4,23 @@
 git config --global user.email "noahg@axioenergy.co"
 git config --global user.name "noahg"
 
-INFLUX_ORG="Axio"
-INFLUX_HOST="http://localhost:8086"
+# 1. Get the device name and strip all whitespace/newlines
+DEVICE_NAME=$(tr -d '[:space:]' < /etc/axio-device-name)
 
-# Define where the token lives
+# 2. Get the InfluxDB token from the secure local file
 TOKEN_FILE="/etc/axio-influx-token"
 
-# Check if the token file exists before proceeding
 if [ ! -f "$TOKEN_FILE" ]; then
-    echo "Error: Token file $TOKEN_FILE not found! Please create it and add your token."
+    echo "Error: Token file $TOKEN_FILE not found!"
     exit 1
 fi
 
-# Read the token
-INFLUX_TOKEN=$(cat "$TOKEN_FILE")
+INFLUX_TOKEN=$(cat "$TOKEN_FILE" | tr -d '[:space:]') # Good idea to strip whitespace here too!
 
-# GitHub Details
-REPO_URL="git@github.com:noahaxio/$(cat /etc/axio-device-name).git"
+# 3. Define the rest of the variables
+INFLUX_ORG="Axio"
+INFLUX_HOST="http://localhost:8086"
+REPO_URL="git@github.com:noahaxio/${DEVICE_NAME}.git"
 BRANCH_NAME="influxdb"
 
 # Temporary workspace
