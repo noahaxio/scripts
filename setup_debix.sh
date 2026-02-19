@@ -38,6 +38,9 @@ sudo apt-get install -y micro
 echo "Installing vnstat..."
 sudo apt-get install vnstat
 
+echo "Installing nmap..."
+sudo apt-get install nmap
+
 # --- 3. Install Tailscale ---
 echo "Installing Tailscale..."
 curl -fsSL https://tailscale.com/install.sh | sh
