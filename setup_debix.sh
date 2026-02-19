@@ -32,6 +32,9 @@ sudo apt-get install -y cockpit
 echo "Installing mbpoll"
 sudo apt-get install -y mbpoll
 
+echo "Installing micro"
+sudo apt-get install -y micro
+
 echo "Installing vnstat..."
 sudo apt-get install vnstat
 
@@ -237,10 +240,6 @@ echo "pulling backend graphs from github"
 
 git config --global user.email "noahg@axioenergy.co"
 git config --global user.name "noahg"
-
-git clone https://github.com/noahaxio/axiographs
-cp cp axiographs/* $REAL_HOME
-rm -r axiographs
 
 echo "Setting up Scripts directory for user: $REAL_USER..."
 
