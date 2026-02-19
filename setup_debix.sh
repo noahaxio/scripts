@@ -36,10 +36,10 @@ echo "Installing micro"
 sudo apt-get install -y micro
 
 echo "Installing vnstat..."
-sudo apt-get install vnstat
+sudo apt-get install -y vnstat
 
 echo "Installing nmap..."
-sudo apt-get install nmap
+sudo apt-get install -y nmap
 
 # --- 3. Install Tailscale ---
 echo "Installing Tailscale..."
