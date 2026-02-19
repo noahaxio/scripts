@@ -55,22 +55,6 @@ echo "Installing Node-RED globally..."
 sudo npm install -g --unsafe-perm node-red
 sudo npm install -g npm-check-updates
 
-# --- 6. Enable Tailscale ---
-echo "Enabling & starting Tailscale service..."
-sudo systemctl enable tailscaled
-sudo systemctl start tailscaled
-
-echo "You must manually authenticate Tailscale:"
-sudo tailscale up
-
-echo "Setting up tailscale exit node and funnel"
-echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
-echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
-sudo sysctl -p /etc/sysctl.d/99-tailscale.conf
-sudo tailscale funnel --bg 1880 
-sudo tailscale up --advertise-exit-node --accept-routes --hostname=$PRECURSOR
-sudo tailscale set --advertise-routes=10.0.0.0/24
-
 # --- 6.5 Setting cockpit system name
 echo "PRETTY_HOSTNAME=\"$PRECURSOR\"" > /etc/machine-info
 systemctl restart systemd-hostnamed
@@ -450,6 +434,22 @@ sudo chmod 644 "$DESKTOP_ENTRY"
 sudo chown root:root "$DESKTOP_ENTRY"
 sudo chown -R debix:debix /home/debix/.node-red
 
+# --- 6. Enable Tailscale ---
+echo "Enabling & starting Tailscale service..."
+sudo systemctl enable tailscaled
+sudo systemctl start tailscaled
+
+echo "You must manually authenticate Tailscale:"
+sudo tailscale up
+
+echo "Setting up tailscale exit node and funnel"
+echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
+echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
+sudo sysctl -p /etc/sysctl.d/99-tailscale.conf
+sudo tailscale funnel --bg 1880 
+sudo tailscale up --advertise-exit-node --accept-routes --hostname=$PRECURSOR
+sudo tailscale set --advertise-routes=10.0.0.0/24
+
 echo "Autorun setup complete."
 
 echo "---"
@@ -457,7 +457,7 @@ echo "✅ All installations complete!"
 
 echo "Performing Auto Cleanup"
 
-sudo apt autoremove
+sudo apt autoremove -y
 
 echo "=== Setup complete! ==="
 echo "Reboot recomended with 'sudo reboot now, next steps would be to setup node red projects, then cloudflare, then run the influxdb backup setup and finally optionally athelia'"
