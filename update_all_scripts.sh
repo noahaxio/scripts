@@ -6,6 +6,20 @@ if (( EUID != 0 )); then
   exit 1
 fi
 
+# 2. Check for Git and install if missing
+if ! command -v git &> /dev/null; then
+    echo "Git is not installed. Attempting to install..."
+    
+    if command -v apt-get &> /dev/null; then
+        apt-get update && apt-get install -y git
+    else
+        echo "Error: Could not determine package manager. Please install git manually." >&2
+        exit 1
+    fi
+    echo "Git installed successfully."
+fi
+
+
 # 2. Define variables
 REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME=$(eval echo "~$REAL_USER")
