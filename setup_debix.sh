@@ -461,6 +461,9 @@ echo "Performing Auto Cleanup"
 
 sudo apt autoremove -y
 
+echo "Removing unused home directories..."
+rm -rf "$REAL_HOME/Video" "$REAL_HOME/Videos" "$REAL_HOME/Music" "$REAL_HOME/Pictures" "$REAL_HOME/Templates"
+
 echo "=== Setup complete! ==="
 echo "Reboot recomended with 'sudo reboot now, next steps would be to setup node red projects, then cloudflare, then run the influxdb backup setup and finally optionally athelia'"
 #sudo reboot now
