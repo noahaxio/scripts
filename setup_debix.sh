@@ -335,28 +335,46 @@ sudo apt-get install -y influxdb2
 
 echo "InfluxDB 2 installation complete."
 
-echo "forcing desktop on startup"
+echo "fixing desktop zoom on startup"
 
-sudo apt install -y curl jq unzip
+sudo apt install -y curl jq unzip wget
 
-# 2. Define the Extension ID
-UUID="no-overview@fthx"
+sudo -u debix bash << 'EOF'
+echo "Starting GNOME 'no-overview' extension installation..."
 
-# 3. Get your GNOME Shell version
-SHELL_VERSION=$(gnome-shell --version | cut -d ' ' -f 3)
+echo "Cleaning up any existing extension directories..."
+rm -rf ~/.local/share/gnome-shell/extensions/no-overview@fthx
 
-# 4. Fetch the download URL for the extension
-DOWNLOAD_URL=$(curl -s "https://extensions.gnome.org/extension-info/?uuid=$UUID&shell_version=$SHELL_VERSION" | jq -r '.download_url')
+echo "Creating the extension directory..."
+mkdir -p ~/.local/share/gnome-shell/extensions/no-overview@fthx
 
-# 5. Download and install the extension
-curl -L "https://extensions.gnome.org$DOWNLOAD_URL" -o extension.zip
-gnome-extensions install extension.zip --force
+echo "Downloading the extension zip..."
+wget -qO /tmp/ext.zip "https://extensions.gnome.org/extension-data/no-overviewfthx.v14.shell-extension.zip"
 
-# 6. Clean up
-rm extension.zip
+echo "Extracting the extension..."
+unzip -q /tmp/ext.zip -d ~/.local/share/gnome-shell/extensions/no-overview@fthx
 
-# 7. Enable the extension
-gnome-extensions enable no-overview@fthx
+echo "Removing the temporary zip file..."
+rm -f /tmp/ext.zip
+
+echo "Enabling user extensions globally..."
+gsettings set org.gnome.shell disable-user-extensions false
+
+echo "Updating the GNOME dconf database..."
+CURRENT_EXT=$(gsettings get org.gnome.shell enabled-extensions)
+
+if [[ "$CURRENT_EXT" != *"no-overview@fthx"* ]]; then
+  if [ "$CURRENT_EXT" = "@as []" ]; then
+    gsettings set org.gnome.shell enabled-extensions "['no-overview@fthx']"
+  else
+    NEW_EXT=$(echo $CURRENT_EXT | sed "s/]/, 'no-overview@fthx']/")
+    gsettings set org.gnome.shell enabled-extensions "$NEW_EXT"
+  fi
+  echo "Success: 'no-overview@fthx' added to enabled extensions."
+else
+  echo "Notice: 'no-overview@fthx' is already in the enabled list."
+fi
+EOF
 
 echo "Installing Nginx"
 
