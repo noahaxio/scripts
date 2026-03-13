@@ -405,13 +405,15 @@ mkdir -p "$AUTORUN_DIR"
 # Create the browser startup script
 cat <<EOF > "$SCRIPT_PATH"
 #!/bin/bash
+export DISPLAY=:0
+
 xset s noblank
 xset s off
 xset -dpms
 
 sleep 10
 
-/usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disableinforbars --incognito http://localhost:1880/dashboard
+/usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disable-infobars --incognito http://localhost:1880/dashboard
 EOF
 
 # Make the script executable
