@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Prevent the script from being run as root/sudo
+if [ "$EUID" -eq 0 ]; then
+    echo "ERROR: This script configures user-level services and must NOT be run with sudo. if you are having issues try running:"
+    echo "sudo chown -R $USER:$USER /home/$USER/.config/systemd/user"
+    exit 1
+fi
+
 echo "=== Converting Kiosk Autostart to systemd ==="
 
 # 1. Remove the old desktop autostart entry if it exists
