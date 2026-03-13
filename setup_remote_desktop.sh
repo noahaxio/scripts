@@ -29,13 +29,11 @@ openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
   -keyout "$CERT_DIR/tls.key" -out "$CERT_DIR/tls.crt" 2>/dev/null
 
 # 4. Handle the GNOME Keyring (Inject unencrypted keyring to bypass GUI prompts)
-echo "Resetting GNOME Keyring to prevent headless hangs..."
-if [ -d "$HOME/.local/share/keyrings" ]; then
-  mv "$HOME/.local/share/keyrings" "$HOME/.local/share/keyrings.bak.$(date +%s)"
-fi
-mkdir -p "$HOME/.local/share/keyrings"
+if [ ! -f "$HOME/.local/share/keyrings/login.keyring" ]; then
+  echo "Setting up GNOME Keyring to prevent headless hangs..."
+  mkdir -p "$HOME/.local/share/keyrings"
 
-cat <<EOF > "$HOME/.local/share/keyrings/login.keyring"
+  cat <<EOF > "$HOME/.local/share/keyrings/login.keyring"
 [keyring]
 display-name=login
 ctime=0
@@ -44,7 +42,10 @@ lock-on-idle=false
 lock-after=false
 EOF
 
-echo "login" > "$HOME/.local/share/keyrings/default"
+  echo "login" > "$HOME/.local/share/keyrings/default"
+else
+  echo "GNOME Keyring already exists, reusing it."
+fi
 
 # 5. Export session variables so the terminal can talk to the graphical bus
 export DISPLAY=:0
@@ -64,8 +65,16 @@ echo "Restarting services..."
 systemctl --user restart gnome-remote-desktop.service
 sleep 2
 
+# 8. Enable the service to start on boot
+echo "Enabling GNOME Remote Desktop to start on boot..."
+systemctl --user enable gnome-remote-desktop.service
+
 echo "Setup Complete! Current Status:"
 echo "------------------------------------------------"
 grdctl status
 echo "------------------------------------------------"
 echo "You can now connect to this device via Windows Remote Desktop."
+echo ""
+echo "Note: For the service to start automatically on system boot (even without user login),"
+echo "run the following command as root or with sudo:"
+echo "  sudo loginctl enable-linger $USER"
