@@ -413,7 +413,8 @@ echo "=== Done! ==="
 echo "Setting up auto launch dashboard using systemd kiosk service"
 
 # Run as the user to set up systemd user service
-sudo -u debix bash << 'EOF'
+sudo -u debix bash << EOF
+export XDG_RUNTIME_DIR=/run/user/$(id -u debix)
 echo "=== Converting Kiosk Autostart to systemd ==="
 
 # 2. Setup systemd user directory
