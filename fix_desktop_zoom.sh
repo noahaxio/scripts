@@ -3,6 +3,11 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+if [ "$EUID" -eq 0 ]; then
+  echo "Error: Please do not run this script as root or with sudo."
+  exit 1
+fi
+
 echo "Starting GNOME 'no-overview' extension installation..."
 
 # Ensure unzip is installed (crucial for a fresh machine)
