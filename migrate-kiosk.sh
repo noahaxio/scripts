@@ -43,12 +43,12 @@ EOF
 
 # 4. Reload, enable, and start the new service
 echo "Reloading user systemd daemon..."
-su - debix -c "systemctl --user daemon-reload"
+sudo -u debix systemctl --user daemon-reload
 
 echo "Enabling kiosk service to run on startup..."
-su - debix -c "systemctl --user enable kiosk.service"
+sudo -u debix systemctl --user enable kiosk.service
 
 echo "Starting kiosk service..."
-su - debix -c "systemctl --user restart kiosk.service"
+sudo -u debix systemctl --user restart kiosk.service
 
 echo "=== Migration Complete! ==="
