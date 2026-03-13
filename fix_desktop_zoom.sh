@@ -23,7 +23,7 @@ echo "Creating the extension directory..."
 mkdir -p ~/.local/share/gnome-shell/extensions/no-overview@fthx
 
 echo "Downloading the extension zip..."
-wget -qO /tmp/ext.zip "https://extensions.gnome.org/extension-data/no-overviewfthx.v14.shell-extension.zip"
+wget -qO /tmp/ext.zip "https://extensions.gnome.org/extension-data/no-overviewfthx.v13.shell-extension.zip"
 
 echo "Extracting the extension..."
 unzip -q /tmp/ext.zip -d ~/.local/share/gnome-shell/extensions/no-overview@fthx

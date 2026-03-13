@@ -349,7 +349,7 @@ echo "Creating the extension directory..."
 mkdir -p ~/.local/share/gnome-shell/extensions/no-overview@fthx
 
 echo "Downloading the extension zip..."
-wget -qO /tmp/ext.zip "https://extensions.gnome.org/extension-data/no-overviewfthx.v14.shell-extension.zip"
+wget -qO /tmp/ext.zip "https://extensions.gnome.org/extension-data/no-overviewfthx.v13.shell-extension.zip"
 
 echo "Extracting the extension..."
 unzip -q /tmp/ext.zip -d ~/.local/share/gnome-shell/extensions/no-overview@fthx
@@ -410,50 +410,52 @@ sudo systemctl enable nginx
 
 echo "=== Done! ==="
 
-echo "Setting up auto launch dashboard"
+echo "Setting up auto launch dashboard using systemd kiosk service"
 
-USER="debix"
-AUTORUN_DIR="$REAL_HOME/Autorun"
-SCRIPT_PATH="$AUTORUN_DIR/setup_browser.sh"
-DESKTOP_ENTRY="/etc/xdg/autostart/start-browser.desktop"
+# Run as the user to set up systemd user service
+sudo -u debix bash << 'EOF'
+echo "=== Converting Kiosk Autostart to systemd ==="
 
-# Create Autorun directory
-mkdir -p "$AUTORUN_DIR"
+# 2. Setup systemd user directory
+SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
+echo "Ensuring systemd user directory exists at $SYSTEMD_USER_DIR..."
+mkdir -p "$SYSTEMD_USER_DIR"
 
-# Create the browser startup script
-cat <<EOF > "$SCRIPT_PATH"
-#!/bin/bash
-export DISPLAY=:0
+# 3. Create the kiosk service file
+SERVICE_FILE="$SYSTEMD_USER_DIR/kiosk.service"
+echo "Creating systemd service file at $SERVICE_FILE..."
 
-xset s noblank
-xset s off
-xset -dpms
+cat << 'INNER_EOF' > "$SERVICE_FILE"
+[Unit]
+Description=Kiosk Browser Watchdog
+After=graphical-session.target
+PartOf=graphical-session.target
 
-sleep 10
+[Service]
+Type=simple
+# Using chromium here, but change to google-chrome if that's what is installed
+ExecStart=/usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disable-infobars --incognito "http://localhost:1880/dashboard"
+Restart=always
+RestartSec=5
+Environment=DISPLAY=:0
 
-/usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disable-infobars --incognito http://localhost:1880/dashboard
+[Install]
+WantedBy=graphical-session.target
+INNER_EOF
+
+# 4. Reload, enable, and start the new service
+echo "Reloading user systemd daemon..."
+systemctl --user daemon-reload
+
+echo "Enabling kiosk service to run on startup..."
+systemctl --user enable kiosk.service
+
+echo "Starting kiosk service..."
+systemctl --user restart kiosk.service
+
+echo "=== Migration Complete! ==="
 EOF
 
-# Make the script executable
-chmod +x "$SCRIPT_PATH"
-chown $USER:$USER "$SCRIPT_PATH"
-
-#ADD FULLSCREEN
-# Create the desktop autostart entry
-sudo bash -c "cat <<EOF > $DESKTOP_ENTRY
-[Desktop Entry]
-Type=Application
-Exec=$SCRIPT_PATH 
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-Name=Start Browser
-Comment=Open Node-RED Dashboard on Login
-EOF"
-
-# Set proper permissions
-sudo chmod 644 "$DESKTOP_ENTRY"
-sudo chown root:root "$DESKTOP_ENTRY"
 sudo chown -R debix:debix /home/debix/.node-red
 
 # --- 6. Enable Tailscale ---
