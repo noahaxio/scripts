@@ -15,7 +15,7 @@ else
 fi
 
 # 2. Setup systemd user directory
-SYSTEMD_USER_DIR="/home/debix/.config/systemd/user"
+SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 echo "Ensuring systemd user directory exists at $SYSTEMD_USER_DIR..."
 mkdir -p "$SYSTEMD_USER_DIR"
 
@@ -43,12 +43,12 @@ EOF
 
 # 4. Reload, enable, and start the new service
 echo "Reloading user systemd daemon..."
-sudo -u debix systemctl --user daemon-reload
+systemctl --user daemon-reload
 
 echo "Enabling kiosk service to run on startup..."
-sudo -u debix systemctl --user enable kiosk.service
+systemctl --user enable kiosk.service
 
 echo "Starting kiosk service..."
-sudo -u debix systemctl --user restart kiosk.service
+systemctl --user restart kiosk.service
 
 echo "=== Migration Complete! ==="
