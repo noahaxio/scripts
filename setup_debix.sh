@@ -376,6 +376,28 @@ else
 fi
 EOF
 
+echo "Adding restartdesktop alias for quick display manager restart..."
+
+sudo -u debix bash << 'EOF'
+TARGET_FILE="$HOME/.bashrc"
+ALIAS_NAME="restartdesktop"
+ALIAS_CMD="sudo systemctl restart gdm"
+
+echo "Configuring alias '$ALIAS_NAME'..."
+
+# Check if the alias already exists to prevent duplicates
+if grep -q "alias $ALIAS_NAME=" "$TARGET_FILE"; then
+    echo "Looks like the alias '$ALIAS_NAME' already exists in $TARGET_FILE."
+else
+    # Append the alias to the bottom of the file
+    echo "" >> "$TARGET_FILE"
+    echo "# Custom alias to restart GNOME Wayland" >> "$TARGET_FILE"
+    echo "alias $ALIAS_NAME=\"$ALIAS_CMD\"" >> "$TARGET_FILE"
+    
+    echo "Successfully added '$ALIAS_NAME' to $TARGET_FILE."
+fi
+EOF
+
 echo "Installing Nginx"
 
 sudo apt install nginx -y
