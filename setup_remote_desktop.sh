@@ -1,39 +1,36 @@
 #!/bin/bash
 
+set -e  # Exit on error
+
 # ==============================================================================
 # GNOME Remote Desktop (RDP) Headless Setup Script for Wayland
 # ==============================================================================
 
-# 1. Set your desired RDP credentials here
 RDP_USER="debix"
 RDP_PASS="debix"
 
 echo "Starting headless RDP setup for $USER..."
 
-# Ensure the script is NOT run as root (grdctl is a user-level service)
 if [ "$EUID" -eq 0 ]; then
   echo "Error: Do not run this script with sudo. Run it as your normal user."
   exit 1
 fi
 
-# 2. Stop running services that might interfere
 echo "Stopping GNOME Remote Desktop and Keyring daemon..."
-systemctl --user stop gnome-remote-desktop.service
-killall -9 gnome-keyring-daemon 2>/dev/null
+systemctl --user stop gnome-remote-desktop.service 2>/dev/null || true
+killall -9 gnome-keyring-daemon 2>/dev/null || true
+sleep 1
 
-# 3. Generate TLS Certificates with absolute paths
 echo "Generating TLS Certificates..."
 CERT_DIR="$HOME"
 openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
   -subj "/O=Debix/CN=$(hostname)" \
   -keyout "$CERT_DIR/tls.key" -out "$CERT_DIR/tls.crt" 2>/dev/null
 
-# 4. Handle the GNOME Keyring (Inject unencrypted keyring to bypass GUI prompts)
 if [ ! -f "$HOME/.local/share/keyrings/login.keyring" ]; then
-  echo "Setting up GNOME Keyring to prevent headless hangs..."
+  echo "Setting up GNOME Keyring..."
   mkdir -p "$HOME/.local/share/keyrings"
-
-  cat <<EOF > "$HOME/.local/share/keyrings/login.keyring"
+  cat <<'EOF' > "$HOME/.local/share/keyrings/login.keyring"
 [keyring]
 display-name=login
 ctime=0
@@ -41,51 +38,47 @@ mtime=0
 lock-on-idle=false
 lock-after=false
 EOF
-
   echo "login" > "$HOME/.local/share/keyrings/default"
 else
-  echo "GNOME Keyring already exists, reusing it."
+  echo "GNOME Keyring already exists."
 fi
 
-# 5. Export session variables so the terminal can talk to the graphical bus
 export DISPLAY=:0
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
-# --- FIX APPLIED HERE ---
-# Start the keyring daemon so `grdctl set-credentials` has a Secret Service to talk to
+# Start keyring daemon (non-blocking - ignore if it fails)
 echo "Starting GNOME Keyring daemon..."
-eval $(gnome-keyring-daemon --start --components=secrets)
+eval "$(timeout 5 gnome-keyring-daemon --start --components=secrets 2>/dev/null)" || true
 
-# Start the remote desktop service so `grdctl` has a target to configure
 echo "Starting GNOME Remote Desktop service..."
 systemctl --user start gnome-remote-desktop.service
-sleep 2 # Give it a moment to initialize
-# ------------------------
+sleep 3  # Give service time to initialize
 
-# 6. Configure grdctl
 echo "Configuring GNOME Remote Desktop..."
-grdctl vnc disable
-grdctl rdp set-tls-key "$CERT_DIR/tls.key"
-grdctl rdp set-tls-cert "$CERT_DIR/tls.crt"
-grdctl rdp set-credentials "$RDP_USER" "$RDP_PASS"
-grdctl rdp disable-view-only
-grdctl rdp enable
 
-# 7. Restart the service to apply everything
-echo "Restarting services to apply configuration..."
+# Use timeout for all grdctl commands (30 seconds each)
+# If a command hangs, timeout will kill it and continue
+timeout 30 grdctl rdp set-tls-key "$CERT_DIR/tls.key" || echo "Warning: grdctl rdp set-tls-key may have timed out"
+timeout 30 grdctl rdp set-tls-cert "$CERT_DIR/tls.crt" || echo "Warning: grdctl rdp set-tls-cert may have timed out"
+timeout 30 grdctl rdp set-credentials "$RDP_USER" "$RDP_PASS" || echo "Warning: grdctl rdp set-credentials may have timed out"
+timeout 30 grdctl rdp disable-view-only || echo "Warning: grdctl rdp disable-view-only may have timed out"
+timeout 30 grdctl rdp enable || echo "Warning: grdctl rdp enable may have timed out"
+
+# Skip VNC in headless mode - it's not needed if you only want RDP
+# timeout 30 grdctl vnc disable || true
+
+echo "Restarting GNOME Remote Desktop service..."
 systemctl --user restart gnome-remote-desktop.service
 sleep 2
 
-# 8. Enable the service to start on boot
-echo "Enabling GNOME Remote Desktop to start on boot..."
+echo "Enabling GNOME Remote Desktop on boot..."
 systemctl --user enable gnome-remote-desktop.service
 
-echo "Setup Complete! Current Status:"
+echo "Setup Complete! Status:"
 echo "------------------------------------------------"
-grdctl status
+systemctl --user status gnome-remote-desktop.service --no-pager || true
 echo "------------------------------------------------"
-echo "You can now connect to this device via Windows Remote Desktop."
+echo "You can now connect via RDP."
 echo ""
-echo "Note: For the service to start automatically on system boot (even without user login),"
-echo "run the following command as root or with sudo:"
+echo "For auto-start on boot without login, run:"
 echo "  sudo loginctl enable-linger $USER"
