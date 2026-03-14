@@ -51,6 +51,17 @@ fi
 export DISPLAY=:0
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
+# --- FIX APPLIED HERE ---
+# Start the keyring daemon so `grdctl set-credentials` has a Secret Service to talk to
+echo "Starting GNOME Keyring daemon..."
+eval $(gnome-keyring-daemon --start --components=secrets)
+
+# Start the remote desktop service so `grdctl` has a target to configure
+echo "Starting GNOME Remote Desktop service..."
+systemctl --user start gnome-remote-desktop.service
+sleep 2 # Give it a moment to initialize
+# ------------------------
+
 # 6. Configure grdctl
 echo "Configuring GNOME Remote Desktop..."
 grdctl vnc disable
@@ -61,7 +72,7 @@ grdctl rdp disable-view-only
 grdctl rdp enable
 
 # 7. Restart the service to apply everything
-echo "Restarting services..."
+echo "Restarting services to apply configuration..."
 systemctl --user restart gnome-remote-desktop.service
 sleep 2
 
