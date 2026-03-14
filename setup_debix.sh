@@ -239,6 +239,31 @@ else
     echo "Start Node-RED once manually so the file is created, then re-run this patch."
 fi
 
+echo "Disabling Dashboard 2 offline ready notification..."
+
+NODE_RED_DIR="/home/debix/.node-red"
+DASHBOARD2_DIR="$NODE_RED_DIR/node_modules/@flowfuse/node-red-dashboard"
+DASHBOARD2_DIST="$DASHBOARD2_DIR/dist"
+
+if [ -d "$DASHBOARD2_DIR" ] && [ -d "$DASHBOARD2_DIST" ]; then
+    echo "Found Dashboard 2 at: $DASHBOARD2_DIR"
+    
+    PATCH_FILE="$DASHBOARD2_DIST/index.html"
+    
+    if [ -f "$PATCH_FILE" ]; then
+        echo "Patching index.html to hide offline ready notification..."
+        
+        if ! grep -q "disable-offline-notification" "$PATCH_FILE"; then
+            sudo sed -i '/<\/head>/i\    <style>\n      /* Hide offline ready notification while keeping PWA functionality */\n      [role="alert"] { display: none !important; }\n      .offline-notification { display: none !important; }\n    </style>' "$PATCH_FILE"
+            echo "CSS patch applied to hide notifications."
+        else
+            echo "Notification hiding CSS already exists."
+        fi
+    else
+        echo "WARNING: index.html not found at $PATCH_FILE"
+    fi
+fi
+
 echo "pulling backend graphs from github"
 
 git config --global user.email "noahg@axioenergy.co"
@@ -500,7 +525,7 @@ sudo tailscale set --advertise-routes=10.0.0.0/24
 echo "Autorun setup complete."
 
 echo "---"
-echo "✅ All installations complete!"
+echo "All installations complete!"
 
 echo "Performing Auto Cleanup"
 
