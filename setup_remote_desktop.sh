@@ -52,24 +52,54 @@ eval "$(timeout 5 gnome-keyring-daemon --start --components=secrets 2>/dev/null)
 
 echo "Starting GNOME Remote Desktop service..."
 systemctl --user start gnome-remote-desktop.service
-sleep 3  # Give service time to initialize
+sleep 5  # Give service time to initialize its D-Bus interface
 
 echo "Configuring GNOME Remote Desktop..."
 
-# Use timeout for all grdctl commands (30 seconds each)
-# If a command hangs, timeout will kill it and continue
-timeout 30 grdctl rdp set-tls-key "$CERT_DIR/tls.key" || echo "Warning: grdctl rdp set-tls-key may have timed out"
-timeout 30 grdctl rdp set-tls-cert "$CERT_DIR/tls.crt" || echo "Warning: grdctl rdp set-tls-cert may have timed out"
-timeout 30 grdctl rdp set-credentials "$RDP_USER" "$RDP_PASS" || echo "Warning: grdctl rdp set-credentials may have timed out"
-timeout 30 grdctl rdp disable-view-only || echo "Warning: grdctl rdp disable-view-only may have timed out"
-timeout 30 grdctl rdp enable || echo "Warning: grdctl rdp enable may have timed out"
+# Function to retry grdctl commands with backoff
+execute_grdctl_with_retry() {
+  local cmd="$@"
+  local attempts=0
+  local max_attempts=5
+  local delay=2
+  
+  while [ $attempts -lt $max_attempts ]; do
+    echo "  Executing: $cmd (attempt $((attempts + 1))/$max_attempts)"
+    if timeout 15 $cmd 2>&1; then
+      echo "  ✓ Success"
+      return 0
+    fi
+    attempts=$((attempts + 1))
+    if [ $attempts -lt $max_attempts ]; then
+      echo "  ✗ Failed, retrying in ${delay}s..."
+      sleep $delay
+      delay=$((delay + 1))  # Incrementally increase delay
+    fi
+  done
+  
+  echo "  ✗ Command failed after $max_attempts attempts: $cmd"
+  return 1
+}
 
-# Skip VNC in headless mode - it's not needed if you only want RDP
-# timeout 30 grdctl vnc disable || true
+# Set credentials FIRST (before other RDP configs)
+execute_grdctl_with_retry grdctl rdp set-credentials "$RDP_USER" "$RDP_PASS"
 
-echo "Restarting GNOME Remote Desktop service..."
+# Then set TLS certificates
+execute_grdctl_with_retry grdctl rdp set-tls-key "$CERT_DIR/tls.key"
+execute_grdctl_with_retry grdctl rdp set-tls-cert "$CERT_DIR/tls.crt"
+
+# Configure RDP settings
+execute_grdctl_with_retry grdctl rdp disable-view-only
+execute_grdctl_with_retry grdctl rdp enable
+
+# Verify configuration was applied
+echo ""
+echo "Verifying RDP configuration..."
+timeout 15 grdctl status || echo "Warning: Could not verify status"
+
+echo "Restarting GNOME Remote Desktop service to apply all settings..."
 systemctl --user restart gnome-remote-desktop.service
-sleep 2
+sleep 3
 
 echo "Enabling GNOME Remote Desktop on boot..."
 systemctl --user enable gnome-remote-desktop.service
