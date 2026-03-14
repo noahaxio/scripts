@@ -56,41 +56,18 @@ sleep 5  # Give service time to initialize its D-Bus interface
 
 echo "Configuring GNOME Remote Desktop..."
 
-# Function to retry grdctl commands with backoff
-execute_grdctl_with_retry() {
-  local cmd="$@"
-  local attempts=0
-  local max_attempts=5
-  local delay=2
-  
-  while [ $attempts -lt $max_attempts ]; do
-    echo "  Executing: $cmd (attempt $((attempts + 1))/$max_attempts)"
-    if timeout 15 $cmd 2>&1; then
-      echo "  ✓ Success"
-      return 0
-    fi
-    attempts=$((attempts + 1))
-    if [ $attempts -lt $max_attempts ]; then
-      echo "  ✗ Failed, retrying in ${delay}s..."
-      sleep $delay
-      delay=$((delay + 1))  # Incrementally increase delay
-    fi
-  done
-  
-  echo "  ✗ Command failed after $max_attempts attempts: $cmd"
-  return 1
-}
+# Use dconf/gsettings to set credentials directly (bypasses Secret Service issues)
+echo "Setting RDP credentials via dconf..."
+gsettings set org.gnome.desktop.remote-access rdp-username "$RDP_USER"
+gsettings set org.gnome.desktop.remote-access rdp-password "$RDP_PASS"
 
-# Set credentials FIRST (before other RDP configs)
-execute_grdctl_with_retry grdctl rdp set-credentials "$RDP_USER" "$RDP_PASS"
+echo "Setting TLS certificates..."
+timeout 15 grdctl rdp set-tls-key "$CERT_DIR/tls.key" || echo "Warning: TLS key set may have failed"
+timeout 15 grdctl rdp set-tls-cert "$CERT_DIR/tls.crt" || echo "Warning: TLS cert set may have failed"
 
-# Then set TLS certificates
-execute_grdctl_with_retry grdctl rdp set-tls-key "$CERT_DIR/tls.key"
-execute_grdctl_with_retry grdctl rdp set-tls-cert "$CERT_DIR/tls.crt"
-
-# Configure RDP settings
-execute_grdctl_with_retry grdctl rdp disable-view-only
-execute_grdctl_with_retry grdctl rdp enable
+echo "Configuring RDP settings..."
+timeout 15 grdctl rdp disable-view-only || echo "Warning: disable-view-only may have failed"
+timeout 15 grdctl rdp enable || echo "Warning: RDP enable may have failed"
 
 # Verify configuration was applied
 echo ""
