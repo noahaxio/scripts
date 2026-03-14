@@ -56,18 +56,21 @@ sleep 5  # Give service time to initialize its D-Bus interface
 
 echo "Configuring GNOME Remote Desktop..."
 
-# Use dconf/gsettings to set credentials directly (bypasses Secret Service issues)
-echo "Setting RDP credentials via dconf..."
-gsettings set org.gnome.desktop.remote-access rdp-username "$RDP_USER"
-gsettings set org.gnome.desktop.remote-access rdp-password "$RDP_PASS"
+echo "Setting TLS certificates via dconf..."
+gsettings set org.gnome.desktop.remote-desktop.rdp tls-key "$CERT_DIR/tls.key"
+gsettings set org.gnome.desktop.remote-desktop.rdp tls-cert "$CERT_DIR/tls.crt"
 
-echo "Setting TLS certificates..."
-timeout 15 grdctl rdp set-tls-key "$CERT_DIR/tls.key" || echo "Warning: TLS key set may have failed"
-timeout 15 grdctl rdp set-tls-cert "$CERT_DIR/tls.crt" || echo "Warning: TLS cert set may have failed"
+echo "Enabling RDP and disabling view-only..."
+gsettings set org.gnome.desktop.remote-desktop.rdp enable true
+gsettings set org.gnome.desktop.remote-desktop.rdp view-only false
 
-echo "Configuring RDP settings..."
-timeout 15 grdctl rdp disable-view-only || echo "Warning: disable-view-only may have failed"
-timeout 15 grdctl rdp enable || echo "Warning: RDP enable may have failed"
+echo "Setting RDP credentials via D-Bus..."
+# Use dbus-send to directly set credentials (bypasses Secret Service issues)
+dbus-send --session \
+  --dest=org.gnome.RemoteDesktop \
+  --object-path=/org/gnome/RemoteDesktop \
+  org.gnome.RemoteDesktop.Rdp.SetCredentials \
+  string:"$RDP_USER" string:"$RDP_PASS" 2>&1 || echo "Note: Credentials may require manual setup if D-Bus method not available"
 
 # Verify configuration was applied
 echo ""
