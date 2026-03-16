@@ -534,9 +534,9 @@ else
 echo "=== Done! Chromium will now restart daily at 3:00 AM. ==="
 
 echo "To test the cron job after reboot, run:"
-echo "  sudo -u debix bash -c 'XDG_RUNTIME_DIR=/run/user/\$(id -u) systemctl --user restart kiosk.service'"
+echo "  XDG_RUNTIME_DIR=/run/user/\$(id -u) systemctl --user restart kiosk.service"
 echo "Then verify the service restarted with:"
-echo "  sudo -u debix bash -c 'XDG_RUNTIME_DIR=/run/user/\$(id -u) systemctl --user status kiosk.service'"
+echo "  systemctl --user status kiosk.service"
 
 # --- 6. Enable Tailscale ---
 echo "Enabling & starting Tailscale service..."
