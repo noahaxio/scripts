@@ -507,7 +507,7 @@ EOF
 sudo chown -R debix:debix /home/debix/.node-red
 
 # --- Daily Kiosk Restart via Cron ---
-echo "=== Setting up Daily Kiosk Restart ==="
+echo "=== Setting up Daily Kiosk Restart (3:00 AM) ==="
 
 echo "Installing cron..."
 sudo apt update
@@ -517,26 +517,15 @@ echo "Enabling and starting the cron service..."
 sudo systemctl enable cron
 sudo systemctl start cron
 
-echo "Enabling systemd user linger for debix user (ensures systemd user session persists)..."
-sudo loginctl enable-linger debix
+echo "Enabling systemd user linger for debix (so kiosk restart works even when logged out)..."
+sudo loginctl enable-linger debix || true
 
-echo "Adding the restart task to the debix user's crontab..."
-
-# Check if the job already exists to avoid adding it twice
-if sudo -u debix bash -c 'crontab -l 2>/dev/null | grep -qF "systemctl --user restart kiosk.service"'; then
-    echo "The cron job already exists in the crontab. Skipping addition."
-else
-    # Output existing jobs (ignoring errors if empty), add the new one, and save
-    # Use single quotes to prevent root shell from expanding $(id -u)
-    sudo -u debix bash -c '(crontab -l 2>/dev/null; echo "0 3 * * * XDG_RUNTIME_DIR=/run/user/$(id -u) systemctl --user restart kiosk.service") | crontab -'
-    echo "Cron job added successfully!"fi
-
-echo "=== Done! Chromium will now restart daily at 3:00 AM. ==="
-
-echo "To test the cron job after reboot, run:"
-echo "  XDG_RUNTIME_DIR=/run/user/\$(id -u) systemctl --user restart kiosk.service"
-echo "Then verify the service restarted with:"
-echo "  systemctl --user status kiosk.service"
+echo "Installing/updating cron entry for debix user (de-duplicated)..."
+sudo -u debix bash <<'CRON_EOF'
+CRON_JOB='0 3 * * * XDG_RUNTIME_DIR=/run/user/$(id -u) systemctl --user restart kiosk.service'
+(crontab -l 2>/dev/null | grep -vF 'systemctl --user restart kiosk.service'; echo "$CRON_JOB") | crontab -
+CRON_EOF
+echo "Cron job installed/updated."
 
 # --- 6. Enable Tailscale ---
 echo "Enabling & starting Tailscale service..."

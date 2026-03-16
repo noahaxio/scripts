@@ -24,13 +24,8 @@ CRON_JOB="0 3 * * * XDG_RUNTIME_DIR=/run/user/\$(id -u) systemctl --user restart
 # 3. Safely add it to the user's crontab without opening an editor
 echo "Adding the restart task to your user's crontab..."
 
-# Check if the job already exists to avoid adding it twice
-if crontab -l 2>/dev/null | grep -qF "systemctl --user restart kiosk.service"; then
-    echo "The cron job already exists in your crontab. Skipping addition."
-else
-    # Output existing jobs (ignoring errors if empty), add the new one, and save
-    (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
-    echo "Cron job added successfully!"
-fi
+# Idempotent: remove all existing entries for this command, then add exactly one.
+(crontab -l 2>/dev/null | grep -vF "systemctl --user restart kiosk.service"; echo "$CRON_JOB") | crontab -
+echo "Cron job installed/updated successfully (duplicates removed if present)."
 
 echo "=== Done! Chromium will now flush and restart daily at 3:00 AM. ==="
