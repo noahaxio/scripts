@@ -229,23 +229,25 @@ else
     exit 1
 fi
 
-echo "Patching Node-RED settings.js to add fs require..."
+echo "Patching Node-RED settings.js to add fs and nodemailer..."
 SETTINGS_FILE="/home/debix/.node-red/settings.js"
 
-# Make sure the file exists (Node-RED must have run once to create it)
 if [ -f "$SETTINGS_FILE" ]; then
-    sudo sed -i "/functionGlobalContext: {/a\        fs: require('fs')," "$SETTINGS_FILE"
-    echo "Inserted fs: require('fs') into functionGlobalContext."
-else
-    echo "WARNING: Node-RED settings.js not found at $SETTINGS_FILE"
-    echo "Start Node-RED once manually so the file is created, then re-run this patch."
-fi
+    # Check and inject 'fs'
+    if ! sudo grep -q "fs: require('fs')" "$SETTINGS_FILE"; then
+        sudo sed -i "/functionGlobalContext: {/a\        fs: require('fs')," "$SETTINGS_FILE"
+        echo "Inserted fs: require('fs') into functionGlobalContext."
+    else
+        echo "fs already exists in settings.js, skipping."
+    fi
 
-echo "Adding nodemailer to Node-RED settings.js..."
-
-if [ -f "$SETTINGS_FILE" ]; then
-    sudo sed -i "/functionGlobalContext: {/a\        nodemailer: require('nodemailer')," "$SETTINGS_FILE"
-    echo "Inserted nodemailer: require('nodemailer') into functionGlobalContext."
+    # Check and inject 'nodemailer'
+    if ! sudo grep -q "nodemailer: require('nodemailer')" "$SETTINGS_FILE"; then
+        sudo sed -i "/functionGlobalContext: {/a\        nodemailer: require('nodemailer')," "$SETTINGS_FILE"
+        echo "Inserted nodemailer: require('nodemailer') into functionGlobalContext."
+    else
+        echo "nodemailer already exists in settings.js, skipping."
+    fi
 else
     echo "WARNING: Node-RED settings.js not found at $SETTINGS_FILE"
     echo "Start Node-RED once manually so the file is created, then re-run this patch."
@@ -315,27 +317,19 @@ RENDERERS_DIR="/home/debix/Renderers"
 SETTINGS_FILE="/home/debix/.node-red/settings.js"
 
 if [ -f "$SETTINGS_FILE" ] && [ -d "$RENDERERS_DIR" ]; then
-    # Loop through every .js file in the Renderers directory
     for filepath in "$RENDERERS_DIR"/*.js; do
-        # 1. Get the filename (e.g., "chart-renderer.js")
         filename=$(basename "$filepath")
-        
-        # 2. Remove the extension to get the base name (e.g., "chart-renderer")
         basename="${filename%.*}"
-        
-        # 3. Convert kebab-case to camelCase (e.g., "chart-renderer" -> "chartRenderer")
-        # This ensures your variable names match what you had manually before.
         varName=$(echo "$basename" | sed -r 's/-([a-z])/\U\1/g')
-        
-        # 4. Construct the line to insert
-        # Result: chartRenderer: require("/home/debix/Renderers/chart-renderer.js"),
         ENTRY="$varName: require(\"$filepath\"),"
         
-        # 5. Insert the line into settings.js
-        # We search for "functionGlobalContext: {" and append the new line after it
-        sudo sed -i "/functionGlobalContext: {/a\        $ENTRY" "$SETTINGS_FILE"
-        
-        echo "  + Added $filename as global variable: $varName"
+        # Check if this specific variable is already injected
+        if ! sudo grep -q "$varName: require" "$SETTINGS_FILE"; then
+            sudo sed -i "/functionGlobalContext: {/a\        $ENTRY" "$SETTINGS_FILE"
+            echo "  + Added $filename as global variable: $varName"
+        else
+            echo "  ~ $filename ($varName) is already in settings.js. Skipping."
+        fi
     done
 else
     echo "WARNING: Could not find Settings file or Renderers directory. Skipping dynamic injection."
@@ -531,16 +525,31 @@ echo "Enabling & starting Tailscale service..."
 sudo systemctl enable tailscaled
 sudo systemctl start tailscaled
 
-echo "You must manually authenticate Tailscale:"
-sudo tailscale up
+echo "Setting up tailscale exit node routing..."
+SYSCTL_FILE="/etc/sysctl.d/99-tailscale.conf"
 
-echo "Setting up tailscale exit node and funnel"
-echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
-echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf
-sudo sysctl -p /etc/sysctl.d/99-tailscale.conf
+# Ensure the sysctl file exists
+sudo touch "$SYSCTL_FILE"
+
+# Add routing rules only if they don't already exist to prevent duplicate lines
+if ! grep -q "net.ipv4.ip_forward = 1" "$SYSCTL_FILE"; then
+    echo 'net.ipv4.ip_forward = 1' | sudo tee -a "$SYSCTL_FILE" > /dev/null
+fi
+
+if ! grep -q "net.ipv6.conf.all.forwarding = 1" "$SYSCTL_FILE"; then
+    echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a "$SYSCTL_FILE" > /dev/null
+fi
+
+# Apply the network routing rules
+sudo sysctl -p "$SYSCTL_FILE"
+
+echo "Applying Tailscale Funnel and Network Settings..."
+# Ensure funnel is running in the background for Node-RED port 1880
 sudo tailscale funnel --bg 1880 
-sudo tailscale up --advertise-exit-node --accept-routes --hostname=$PRECURSOR
-sudo tailscale set --advertise-routes=10.0.0.0/24
+
+echo "You must manually authenticate Tailscale if not already logged in."
+# Combine all state changes into a single 'up' command to prevent the non-default flags error
+sudo tailscale up --advertise-exit-node --accept-routes --hostname="$PRECURSOR" --advertise-routes=10.0.0.0/24
 
 echo "Autorun setup complete."
 
