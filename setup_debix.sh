@@ -5,10 +5,21 @@ if (( EUID != 0 )); then
 fi
 
 #set -e
-read -p $'What goes before .axioenergy.co: / tailscale name / cockpit name: \n' PRECURSOR
 
-# Save the variable to a file so other scripts can read it later
-echo "$PRECURSOR" | sudo tee /etc/axio-device-name > /dev/null
+DEVICE_NAME_FILE="/etc/axio-device-name"
+
+# Check if the device name file already exists and is not empty
+if [ -s "$DEVICE_NAME_FILE" ]; then
+  # Read the existing value directly from the file
+  PRECURSOR=$(cat "$DEVICE_NAME_FILE")
+  echo "Found existing device name: $PRECURSOR"
+else
+  # File doesn't exist, prompt the user for the name
+  read -p $'What goes before .axioenergy.co: / tailscale name / cockpit name: \n' PRECURSOR
+  
+  # Save the variable to a file so other scripts can read it later
+  echo "$PRECURSOR" | sudo tee "$DEVICE_NAME_FILE" > /dev/null
+fi
 
 echo "=== Debix Setup Script Starting ==="
 
