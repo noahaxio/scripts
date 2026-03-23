@@ -476,25 +476,24 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disable-infobars --incognito "http://localhost:1880/dashboard"
+# Added Ozone Wayland flags for native Wayland rendering (prevents XWayland lockups)
+ExecStart=/usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disable-infobars --incognito --enable-features=UseOzonePlatform --ozone-platform=wayland "http://localhost:1880/dashboard"
+
+# Forces systemd to send a SIGTERM to all child processes (GPU, renderers) to ensure they die
+KillMode=mixed
+# Optional: forcefully kill lingering processes before starting a new one
+ExecStopPost=/usr/bin/killall -9 chromium
+
 Restart=always
-RestartSec=5
+# Increased slightly to give GNOME time to unmap the previous window and release the GPU
+RestartSec=3
+
 Environment=DISPLAY=:0
+Environment=WAYLAND_DISPLAY=wayland-0
 
 [Install]
 WantedBy=graphical-session.target
 INNER_EOF
-
-echo "Reloading user systemd daemon..."
-systemctl --user daemon-reload
-
-echo "Enabling kiosk service to run on startup..."
-systemctl --user enable kiosk.service
-
-echo "Starting kiosk service..."
-systemctl --user restart kiosk.service
-
-echo "=== Migration Complete! ==="
 EOF
 
 sudo chown -R debix:debix /home/debix/.node-red
