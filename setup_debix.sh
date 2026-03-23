@@ -271,37 +271,32 @@ git config --global user.email "noahg@axioenergy.co"
 git config --global user.name "noahg"
 
 echo "Setting up Scripts directory for user: $REAL_USER..."
-
-# Create the Scripts directory
 mkdir -p "$REAL_HOME/Scripts"
-
-# Move into that directory
 cd "$REAL_HOME/Scripts" || exit
 
-# Clone the repository into the CURRENT directory (.)
-git clone https://github.com/noahaxio/scripts .
+if [ -d ".git" ]; then
+    echo "Scripts repo already exists. Pulling latest changes..."
+    sudo -u "$REAL_USER" git pull
+else
+    sudo -u "$REAL_USER" git clone https://github.com/noahaxio/scripts .
+fi
 
-# Make all files in the directory executable
 chmod +x *
-
-# Fix permissions so the user owns the folder and files
 chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/Scripts"
 
 echo "Setting up Renderers directory for user: $REAL_USER..."
-
-# Create the Renderers directory
 mkdir -p "$REAL_HOME/Renderers"
-
-# Move into that directory
 cd "$REAL_HOME/Renderers" || exit
 
-# Clone the repository into the CURRENT directory (.)
-git clone https://github.com/noahaxio/renderers .
+if [ -d ".git" ]; then
+    echo "Renderers repo already exists. Pulling latest changes..."
+    sudo -u "$REAL_USER" git pull
+else
+    sudo -u "$REAL_USER" git clone https://github.com/noahaxio/renderers .
+fi
 
-# Fix permissions so the user owns the folder and files
 chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/Renderers"
-
-echo "Done. Renderers cloned successfully."
+echo "Done. Renderers synced successfully."
 
 echo "Dynamically adding all Renderers to Node-RED settings.js..."
 
@@ -362,31 +357,25 @@ sudo apt-get install -y influxdb2
 echo "InfluxDB 2 installation complete."
 
 echo "fixing desktop zoom on startup"
-
 sudo apt install -y curl jq unzip wget
 
-sudo -u debix bash << 'EOF'
+# Notice the -H flag and the explicit exports
+sudo -H -u debix bash << 'EOF'
+export HOME=/home/debix
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+export DISPLAY=:0
+
 echo "Starting GNOME 'no-overview' extension installation..."
 
-echo "Cleaning up any existing extension directories..."
 rm -rf ~/.local/share/gnome-shell/extensions/no-overview@fthx
-
-echo "Creating the extension directory..."
 mkdir -p ~/.local/share/gnome-shell/extensions/no-overview@fthx
 
-echo "Downloading the extension zip..."
 wget -qO /tmp/ext.zip "https://extensions.gnome.org/extension-data/no-overviewfthx.v13.shell-extension.zip"
-
-echo "Extracting the extension..."
 unzip -q /tmp/ext.zip -d ~/.local/share/gnome-shell/extensions/no-overview@fthx
-
-echo "Removing the temporary zip file..."
 rm -f /tmp/ext.zip
 
-echo "Enabling user extensions globally..."
 gsettings set org.gnome.shell disable-user-extensions false
 
-echo "Updating the GNOME dconf database..."
 CURRENT_EXT=$(gsettings get org.gnome.shell enabled-extensions)
 
 if [[ "$CURRENT_EXT" != *"no-overview@fthx"* ]]; then
@@ -460,8 +449,10 @@ echo "=== Done! ==="
 
 echo "Setting up auto launch dashboard using systemd kiosk service"
 
-sudo -u debix bash << 'EOF'
+sudo -H -u debix bash << 'EOF'
+export HOME=/home/debix
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
 echo "=== Converting Kiosk Autostart to systemd ==="
 
