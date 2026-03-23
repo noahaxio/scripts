@@ -460,21 +460,19 @@ echo "=== Done! ==="
 
 echo "Setting up auto launch dashboard using systemd kiosk service"
 
-# Run as the user to set up systemd user service
-sudo -u debix bash << EOF
-export XDG_RUNTIME_DIR=/run/user/$(id -u debix)
+sudo -u debix bash << 'EOF'
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+
 echo "=== Converting Kiosk Autostart to systemd ==="
 
-# 2. Setup systemd user directory
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 echo "Ensuring systemd user directory exists at $SYSTEMD_USER_DIR..."
 mkdir -p "$SYSTEMD_USER_DIR"
 
-# 3. Create the kiosk service file
 SERVICE_FILE="$SYSTEMD_USER_DIR/kiosk.service"
 echo "Creating systemd service file at $SERVICE_FILE..."
 
-cat << 'INNER_EOF' > "$SERVICE_FILE"
+cat > "$SERVICE_FILE" << 'INNER_EOF'
 [Unit]
 Description=Kiosk Browser Watchdog
 After=graphical-session.target
@@ -482,7 +480,6 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
-# Using chromium here, but change to google-chrome if that's what is installed
 ExecStart=/usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disable-infobars --incognito "http://localhost:1880/dashboard"
 Restart=always
 RestartSec=5
@@ -492,7 +489,6 @@ Environment=DISPLAY=:0
 WantedBy=graphical-session.target
 INNER_EOF
 
-# 4. Reload, enable, and start the new service
 echo "Reloading user systemd daemon..."
 systemctl --user daemon-reload
 
