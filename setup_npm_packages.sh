@@ -117,6 +117,7 @@ NODE_RED_PACKAGES=(
     "nodemailer"
     "node-red-contrib-socketcan"
     "chartjs-node-canvas"
+    "node-red-contrib-oauth2"
 )
 
 npm install "${NODE_RED_PACKAGES[@]}"
