@@ -52,6 +52,9 @@ sudo apt-get install -y vnstat
 echo "Installing nmap..."
 sudo apt-get install -y nmap
 
+echo "Installing ncdu..."
+sudo apt-get install -y ncdu
+
 # --- 3. Install Tailscale ---
 echo "Installing Tailscale..."
 curl -fsSL https://tailscale.com/install.sh | sh
@@ -476,17 +479,15 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
-# Added Ozone Wayland flags for native Wayland rendering (prevents XWayland lockups)
-ExecStart=/usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disable-infobars --incognito --enable-features=UseOzonePlatform --ozone-platform=wayland "http://localhost:1880/dashboard"
+# Checks for a physical display connection. If true, launches Chromium with crash-reporting disabled. If false, sleeps and exits cleanly.
+ExecStart=/bin/bash -c 'if grep -q "^connected" /sys/class/drm/card*-*/status 2>/dev/null; then exec /usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disable-infobars --incognito --enable-features=UseOzonePlatform --ozone-platform=wayland --disable-crash-reporter --no-crash-upload --disk-cache-dir=/dev/null "http://localhost:1880/dashboard"; else echo "No display attached. Skipping Chromium launch."; sleep 30; exit 0; fi'
 
-# Forces systemd to send a SIGTERM to all child processes (GPU, renderers) to ensure they die
 KillMode=mixed
-# Optional: forcefully kill lingering processes before starting a new one
-ExecStopPost=/usr/bin/killall -9 chromium
+# The minus (-) tells systemd to ignore the exit code if Chromium isn't running
+ExecStopPost=-/usr/bin/killall -9 chromium
 
 Restart=always
-# Increased slightly to give GNOME time to unmap the previous window and release the GPU
-RestartSec=3
+RestartSec=15
 
 Environment=DISPLAY=:0
 Environment=WAYLAND_DISPLAY=wayland-0
@@ -494,6 +495,10 @@ Environment=WAYLAND_DISPLAY=wayland-0
 [Install]
 WantedBy=graphical-session.target
 INNER_EOF
+
+echo "Reloading systemd and enabling kiosk service..."
+systemctl --user daemon-reload
+systemctl --user enable kiosk.service
 EOF
 
 sudo chown -R debix:debix /home/debix/.node-red
