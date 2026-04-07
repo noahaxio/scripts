@@ -74,7 +74,6 @@ MAIN_PACKAGES=(
     "node-red-contrib-unit-converter"
     "node-red-node-email"
     "chartjs-node-canvas"
-    "@mschaeffler/node-red-tcping"
 )
 
 # Install packages as root (permissions fixed later)
