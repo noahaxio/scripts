@@ -74,6 +74,7 @@ MAIN_PACKAGES=(
     "node-red-contrib-unit-converter"
     "node-red-node-email"
     "chartjs-node-canvas"
+    "@mschaeffler/node-red-tcping"
 )
 
 # Install packages as root (permissions fixed later)
@@ -118,6 +119,7 @@ NODE_RED_PACKAGES=(
     "node-red-contrib-socketcan"
     "chartjs-node-canvas"
     "node-red-contrib-oauth2"
+    "@mschaeffler/node-red-tcping"
 )
 
 npm install "${NODE_RED_PACKAGES[@]}"
