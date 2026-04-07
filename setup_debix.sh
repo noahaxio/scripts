@@ -203,6 +203,7 @@ echo "Changed directory to: $PWD"
 NODE_RED_PACKAGES=(
     "@flowfuse/node-red-dashboard"
     "@platmac/node-red-pdfbuilder"
+    "@mschaeffler/node-red-tcping"
     "node-red-contrib-boolean-logic-ultimate"
     "node-red-contrib-cpu"
     "node-red-contrib-fs-ops"
