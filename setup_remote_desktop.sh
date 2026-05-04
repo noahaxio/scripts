@@ -29,11 +29,17 @@ openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
   -keyout "$CERT_DIR/tls.key" -out "$CERT_DIR/tls.crt" 2>/dev/null
 
 # 4. Handle the GNOME Keyring (Inject unencrypted keyring to bypass GUI prompts)
-if [ ! -f "$HOME/.local/share/keyrings/login.keyring" ]; then
-  echo "Setting up GNOME Keyring to prevent headless hangs..."
-  mkdir -p "$HOME/.local/share/keyrings"
+echo "Setting up GNOME Keyring to prevent headless hangs..."
+mkdir -p "$HOME/.local/share/keyrings"
 
-  cat <<EOF > "$HOME/.local/share/keyrings/login.keyring"
+# BACKUP the existing locked keyring so we force the creation of an unlocked one
+if [ -f "$HOME/.local/share/keyrings/login.keyring" ]; then
+  mv "$HOME/.local/share/keyrings/login.keyring" "$HOME/.local/share/keyrings/login.keyring.bak"
+  echo "Backed up existing locked keyring."
+fi
+
+# Create the unencrypted blank keyring
+cat <<EOF > "$HOME/.local/share/keyrings/login.keyring"
 [keyring]
 display-name=login
 ctime=0
@@ -42,14 +48,16 @@ lock-on-idle=false
 lock-after=false
 EOF
 
-  echo "login" > "$HOME/.local/share/keyrings/default"
-else
-  echo "GNOME Keyring already exists, reusing it."
-fi
+echo "login" > "$HOME/.local/share/keyrings/default"
 
 # 5. Export session variables so the terminal can talk to the graphical bus
 export DISPLAY=:0
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+
+# 5.5 Explicitly start the Keyring Daemon on the current D-Bus session
+echo "Starting GNOME Keyring daemon..."
+eval $(gnome-keyring-daemon --start --components=secrets)
+export SSH_AUTH_SOCK
 
 # 6. Configure grdctl
 echo "Configuring GNOME Remote Desktop..."
