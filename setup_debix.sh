@@ -16,7 +16,8 @@ if [ -s "$DEVICE_NAME_FILE" ]; then
 else
   # File doesn't exist, prompt the user for the name
   read -p $'What goes before .axioenergy.co: / tailscale name / cockpit name: \n' PRECURSOR
-  
+  PRECURSOR=$(echo "$PRECURSOR" | tr '[:upper:]' '[:lower:]')
+
   # Save the variable to a file so other scripts can read it later
   echo "$PRECURSOR" | sudo tee "$DEVICE_NAME_FILE" > /dev/null
 fi
