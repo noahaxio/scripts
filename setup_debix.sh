@@ -240,7 +240,7 @@ SETTINGS_FILE="/home/debix/.node-red/settings.js"
 if [ -f "$SETTINGS_FILE" ]; then
     # Check and inject 'fs'
     if ! sudo grep -q "fs: require('fs')" "$SETTINGS_FILE"; then
-        sudo sed -i "/functionGlobalContext: {/a\        fs: require('fs')," "$SETTINGS_FILE"
+        sudo sed -i "0,/^[[:space:]]*functionGlobalContext: {/s/functionGlobalContext: {/functionGlobalContext: {\n        fs: require('fs'),/" "$SETTINGS_FILE"
         echo "Inserted fs: require('fs') into functionGlobalContext."
     else
         echo "fs already exists in settings.js, skipping."
@@ -248,7 +248,7 @@ if [ -f "$SETTINGS_FILE" ]; then
 
     # Check and inject 'nodemailer'
     if ! sudo grep -q "nodemailer: require('nodemailer')" "$SETTINGS_FILE"; then
-        sudo sed -i "/functionGlobalContext: {/a\        nodemailer: require('nodemailer')," "$SETTINGS_FILE"
+        sudo sed -i "0,/^[[:space:]]*functionGlobalContext: {/s/functionGlobalContext: {/functionGlobalContext: {\n        nodemailer: require('nodemailer'),/" "$SETTINGS_FILE"
         echo "Inserted nodemailer: require('nodemailer') into functionGlobalContext."
     else
         echo "nodemailer already exists in settings.js, skipping."
@@ -316,29 +316,6 @@ fi
 chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/Renderers"
 echo "Done. Renderers synced successfully."
 
-echo "Dynamically adding all Renderers to Node-RED settings.js..."
-
-RENDERERS_DIR="/home/debix/Renderers"
-SETTINGS_FILE="/home/debix/.node-red/settings.js"
-
-if [ -f "$SETTINGS_FILE" ] && [ -d "$RENDERERS_DIR" ]; then
-    for filepath in "$RENDERERS_DIR"/*.js; do
-        filename=$(basename "$filepath")
-        basename="${filename%.*}"
-        varName=$(echo "$basename" | sed -r 's/-([a-z])/\U\1/g')
-        ENTRY="$varName: require(\"$filepath\"),"
-        
-        # Check if this specific variable is already injected
-        if ! sudo grep -q "$varName: require" "$SETTINGS_FILE"; then
-            sudo sed -i "/functionGlobalContext: {/a\        $ENTRY" "$SETTINGS_FILE"
-            echo "  + Added $filename as global variable: $varName"
-        else
-            echo "  ~ $filename ($varName) is already in settings.js. Skipping."
-        fi
-    done
-else
-    echo "WARNING: Could not find Settings file or Renderers directory. Skipping dynamic injection."
-fi
 
 #ADD AUTO GIT / AUTO COMMIT USING .config.users.json and settings.js / AUTO PUSH TO GITHUB
 
