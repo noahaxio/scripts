@@ -59,7 +59,7 @@ apt-get install -y nodejs
 
 # --- 4. Node-RED (global) ---
 echo "Installing Node-RED globally..."
-npm install -g --unsafe-perm node-red
+npm install -g --unsafe-perm node-red --verbose
 npm install -g npm-check-updates
 
 # --- 5. Cockpit pretty hostname ---
