@@ -215,6 +215,7 @@ git config --global user.name "noahg"
 
 echo "Setting up Scripts directory for user: $REAL_USER..."
 mkdir -p "$REAL_HOME/Scripts"
+chown "$REAL_USER":"$REAL_USER" "$REAL_HOME/Scripts"
 cd "$REAL_HOME/Scripts" || exit
 if [ -d ".git" ]; then
     echo "Scripts repo exists. Pulling latest..."
@@ -227,6 +228,7 @@ chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/Scripts"
 
 echo "Setting up Renderers directory for user: $REAL_USER..."
 mkdir -p "$REAL_HOME/Renderers"
+chown "$REAL_USER":"$REAL_USER" "$REAL_HOME/Renderers"
 cd "$REAL_HOME/Renderers" || exit
 if [ -d ".git" ]; then
     echo "Renderers repo exists. Pulling latest..."
