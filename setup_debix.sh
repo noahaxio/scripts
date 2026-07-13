@@ -301,6 +301,20 @@ else
 fi
 EOF
 
+# --- 13b. GNOME single workspace (disable multi-finger swipe desktop switching) ---
+# Forces one static workspace so touchscreen swipes have nowhere to go, and
+# disables hot corners. Permanent fix is the gnome-kiosk package (see TODO_gnome_kiosk.txt).
+echo "Forcing single GNOME workspace + disabling hot corners..."
+sudo -H -u debix bash <<'EOF' || true
+export HOME=/home/debix
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+
+gsettings set org.gnome.mutter dynamic-workspaces false
+gsettings set org.gnome.desktop.wm.preferences num-workspaces 1
+gsettings set org.gnome.desktop.interface enable-hot-corners false
+echo "Workspace/gesture settings applied."
+EOF
+
 # --- 14. restartdesktop alias ---
 echo "Adding restartdesktop alias..."
 sudo -u debix bash <<'EOF' || true

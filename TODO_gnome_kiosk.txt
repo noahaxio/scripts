@@ -1,0 +1,42 @@
+TODO: Replace full GNOME session with gnome-kiosk
+
+Current state
+-------------
+setup_debix.sh runs a full GNOME (Wayland) desktop and launches Chromium in
+kiosk mode via a systemd user service (kiosk.service). Multi-desktop swipe
+gestures are mitigated with gsettings (section 13b of setup_debix.sh):
+
+  - org.gnome.mutter dynamic-workspaces = false
+  - org.gnome.desktop.wm.preferences num-workspaces = 1
+  - org.gnome.desktop.interface enable-hot-corners = false
+
+This stops left/right workspace swiping, but a 3-finger swipe UP can still
+open the GNOME Activities overview (partially mitigated by the
+no-overview@fthx extension installed in section 13).
+
+Permanent fix
+-------------
+Use the `gnome-kiosk` package instead of the full GNOME Shell session:
+
+  sudo apt-get install gnome-kiosk
+
+gnome-kiosk is a dedicated kiosk compositor from the GNOME project:
+  - No Activities overview, no workspaces, no hot corners, no gestures
+  - Runs a single fullscreen application (Chromium here)
+  - Still Wayland-native, works with GDM autologin
+
+Migration steps (rough)
+-----------------------
+1. Install gnome-kiosk on the Debix image.
+2. Create a kiosk session: gnome-kiosk ships a "GNOME Kiosk" GDM session
+   entry (or create /usr/share/wayland-sessions/kiosk.desktop pointing at a
+   script that starts gnome-kiosk + Chromium).
+3. Point GDM autologin for the debix user at that session
+   (AccountsService: /var/lib/AccountsService/users/debix, Session=).
+4. Move the Chromium launch/watchdog logic from kiosk.service into the
+   kiosk session script, or keep kiosk.service and bind it to the new
+   session's graphical-session.target.
+5. Remove the no-overview extension + workspace gsettings workarounds
+   (sections 13 and 13b of setup_debix.sh) once verified.
+6. Test on hardware: display detection branch, restart-on-close behaviour,
+   3AM cron restart, and touchscreen gestures.

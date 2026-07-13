@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash -n \"/Users/noahgonsenhauser/Library/CloudStorage/Dropbox/Axio/Scripts/setup_debix.sh\")"
+    ]
+  }
+}
