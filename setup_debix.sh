@@ -375,6 +375,9 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
+# Remove any stale Chromium profile lock left by a prior unclean kill (killall -9 /
+# session teardown) so it can't trip the "profile appears to be in use" dialog on next launch.
+ExecStartPre=/bin/bash -c 'rm -f /home/debix/.config/chromium/Singleton*'
 # Checks for a physical display connection. If true, launches Chromium with crash-reporting disabled. If false, sleeps and exits cleanly.
 ExecStart=/bin/bash -c 'if grep -q "^connected" /sys/class/drm/card*-*/status 2>/dev/null; then exec /usr/bin/chromium --kiosk --password-store=basic --noerrdialogs --disable-infobars --incognito --enable-features=UseOzonePlatform --ozone-platform=wayland --disable-crash-reporter --no-crash-upload --disk-cache-dir=/dev/null "http://localhost:1880/dashboard"; else echo "No display attached. Skipping Chromium launch."; sleep 30; exit 0; fi'
 
