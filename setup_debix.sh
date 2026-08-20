@@ -2,7 +2,7 @@
 # setup_debix_alt.sh — optimised variant of setup_debix.sh
 # Changes vs original: strict mode + guards, consolidated apt, Node LTS, fixed
 # Node-RED start/settings/restart ordering, npm install location + dedupe,
-# InfluxData key hygiene, Tailscale up-before-funnel. Original left untouched.
+# InfluxData key hygiene. Original left untouched.
 
 if (( EUID != 0 )); then
   echo "This script must be run with sudo or as root." >&2
@@ -25,8 +25,8 @@ AUTHELIA_ADMIN_USER="admin"
 AUTHELIA_ADMIN_PASSWORD="CHANGE_ME"
 AUTHELIA_ADMIN_EMAIL="noah@axioenergy.co"
 
-# --- Node-RED editor admin account (guards the editor + admin API on :1880, which
-# `tailscale funnel` publishes to the internet further down) ---
+# --- Node-RED editor admin account (guards the editor + admin API on :1880). :1880 is
+# LAN/tailnet only - Authelia in front of nginx on :1881 is the sole public ingress) ---
 NODERED_ADMIN_USER="admin"
 NODERED_ADMIN_PASSWORD="CHANGE_ME"
 # Flipped to 1 once adminAuth actually lands in settings.js; reported in the final summary.
@@ -461,7 +461,7 @@ CRON_JOB='0 3 * * * XDG_RUNTIME_DIR=/run/user/$(id -u) systemctl --user restart 
 CRON_EOF
 echo "Cron job installed/updated."
 
-# --- 17. Tailscale enable + routing + up (before funnel) ---
+# --- 17. Tailscale enable + routing + up ---
 echo "Enabling & starting Tailscale service..."
 systemctl enable tailscaled
 systemctl start tailscaled
@@ -478,10 +478,11 @@ fi
 sysctl -p "$SYSCTL_FILE"
 
 echo "You must manually authenticate Tailscale if not already logged in."
-# 'up' before 'funnel' — funnel needs the node to be up. Both guarded (auth is manual/async).
+# Guarded because Tailscale auth is manual/async - an unauthenticated node must not abort the run.
+# Deliberately NO `tailscale funnel` here: funnel publishes to the public internet, and :1880
+# is Node-RED direct, which would bypass nginx on :1881 and therefore Authelia. The only
+# intended public ingress is Cloudflare -> :1881 -> Authelia.
 tailscale up --advertise-exit-node --accept-routes --hostname="$PRECURSOR" --advertise-routes=10.0.0.0/24 || true
-echo "Applying Tailscale Funnel for Node-RED port 1880..."
-tailscale funnel --bg 1880 || true
 
 echo "Autorun setup complete."
 
