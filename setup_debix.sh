@@ -22,13 +22,13 @@ STATIC_HOSTNAME="Axio-BlackBox-EMS"
 # --- Authelia admin account (placeholders — edit before running on a fleet;
 # avoid committing the real password to git) ---
 AUTHELIA_ADMIN_USER="admin"
-AUTHELIA_ADMIN_PASSWORD="CHANGE_ME"
+AUTHELIA_ADMIN_PASSWORD="solar123!"
 AUTHELIA_ADMIN_EMAIL="noah@axioenergy.co"
 
 # --- Node-RED editor admin account (guards the editor + admin API on :1880). :1880 is
 # LAN/tailnet only - Authelia in front of nginx on :1881 is the sole public ingress) ---
-NODERED_ADMIN_USER="admin"
-NODERED_ADMIN_PASSWORD="CHANGE_ME"
+NODERED_ADMIN_USER="debix"
+NODERED_ADMIN_PASSWORD="solar123!"
 # Flipped to 1 once adminAuth actually lands in settings.js; reported in the final summary.
 NODERED_AUTH_OK=0
 
@@ -526,6 +526,12 @@ if [ -z "$ADMIN_HASH" ]; then
 fi
 echo "--> Hash generated successfully."
 
+# Per-device random secrets. Never hardcode these: the config heredoc below is unquoted,
+# so a committed literal would be identical on every device in the fleet.
+SESSION_SECRET=$(openssl rand -hex 32)
+STORAGE_KEY=$(openssl rand -hex 32)
+JWT_SECRET=$(openssl rand -hex 32)
+
 echo "--> Setting up Authelia files in /opt/authelia..."
 mkdir -p /opt/authelia
 cd /opt/authelia
@@ -580,13 +586,13 @@ session:
   domain: axioenergy.co
   expiration: 2h
   inactivity: 15m
-  secret: 'super_secret_session_key_change_me'
+  secret: '$SESSION_SECRET'
   redis:
     host: authelia_redis
     port: 6379
 
 storage:
-  encryption_key: 'super_secret_storage_key_change_me'
+  encryption_key: '$STORAGE_KEY'
   local:
     path: /config/db.sqlite3
 
@@ -596,7 +602,7 @@ notifier:
 
 identity_validation:
   reset_password:
-    jwt_secret: 'super_secret_jwt_key_change_me'
+    jwt_secret: '$JWT_SECRET'
 EOF
 
 echo "--> Configuring Nginx..."
