@@ -19,7 +19,7 @@ DESKTOP_ENTRY="/etc/xdg/autostart/start-browser.desktop"
 # 1. Scripts Directory
 if [ -d "$REAL_HOME/Scripts" ]; then
     echo "Applying permissions to Scripts directory..."
-    chmod +x "$REAL_HOME/Scripts"/*
+    find "$REAL_HOME/Scripts" -type f -name '*.sh' -exec chmod +x {} +
     chown -R "$REAL_USER":"$REAL_USER" "$REAL_HOME/Scripts"
 else
     echo "Directory $REAL_HOME/Scripts not found. Skipping."

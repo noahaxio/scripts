@@ -55,8 +55,8 @@ else
     git clone "$REPO_URL" .
 fi
 
-# Make all files in the directory executable
-chmod +x *
+# Make every script executable, including those inside the category subfolders
+find "$TARGET_DIR" -type f -name '*.sh' -exec chmod +x {} +
 
 # Fix permissions so the user owns the folder and files
 # (This ensures the .git folder and scripts belong to Noah, not root)
